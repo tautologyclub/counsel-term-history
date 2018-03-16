@@ -39,12 +39,11 @@
 (require 'cl)
 
 (defcustom counsel-th-history-file "~/.bash_history"
-  "The location of your history file."
+  "The location of your history file (tildes are fine)."
   :type 'string)
 
-(defvar counsel-th-filter "^\\(cd\\|ll\\|ls\\|\\\.\\\.\\)"
+(defcustom counsel-th-filter "^\\(cd\\|ll\\|ls\\|\\\.\\\.\\|pushd\\|popd\\)"
   "Regex filter for the uninteresting lines in the history file.")
-(csetq counsel-th-filter "^\\(cd\\|ll\\|ls\\|\\\.\\\.\\)")
 
 (defun counsel-th--read-lines (file)
   "Convert lines in FILE to list of strings, applying regex filter."
@@ -54,15 +53,16 @@
                (split-string (buffer-string) "\n" t))
     ))
 
-(defun counsel-bash-history ()
+(defvar counsel-th-meta-history)
+(defun counsel-term-history ()
   "You know, do stuff."
   (interactive)
-  (ivy-read "Bash history: "
+  (ivy-read "History: "
             (counsel-th--read-lines (expand-file-name counsel-th-history-file))
+            :history counsel-th-meta-history
             :action (lambda (x)
                       (setq counsel-th--placeholder x)))
-  (term-send-raw-string (concat "" counsel-th--placeholder))
-  )
+  (term-send-raw-string (concat "" counsel-th--placeholder)))
 
 (provide 'counsel-term-history)
 ;;; counsel-term-history.el ends here
