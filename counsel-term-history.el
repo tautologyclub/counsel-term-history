@@ -24,12 +24,22 @@
 
 ;;; Commentary:
 ;;
-;; A simple utility that completing-reads your ~/.bash_history (or whatever
-;; other file you want, really) and sends the selected candidate to the
-;; terminal.
+;; Some hacky but extremely convenient functions for making life inside
+;; term-mode easier.  All of them make use of two things: first, the excellent
+;; 'ivy-read' API and second, the fact that you can send raw control characters
+;; such representing C-k, C-u, etc to your terminal using
+;; 'term-send-raw-string'.
+;;
+;; A summary:
+;;
+;; counsel-term-history -- A simple utility that completing-reads your
+;; ~/.bash_history (or whatever other file you want, really) and sends the
+;; selected candidate to the terminal.  To get going, bind 'counsel-term-history
+;; to some nice stroke in your term-mode-map, C-r comes quite naturally to
+;; mind.
 ;;
 ;; Note: This package has no association with counsel or ivy apart from using
-;; the ivy api and kinda feeling lika a counsel function.  The author admits to
+;; the ivy api and kinda feeling lika a counsel package.  The author admits to
 ;; a slighy fanboy-ism towards their creator however -- support him on Patreon!
 ;; More instructions on his site, oremacs.com.
 
@@ -46,23 +56,25 @@
   "Regex filter for the uninteresting lines in the history file.")
 
 (defun counsel-th--read-lines (file)
-  "Convert lines in FILE to list of strings, applying regex filter."
+  "Make a reversed list of lines in FILE, applying regex counsel-th-filter."
   (with-temp-buffer
     (insert-file-contents file)
     (remove-if (lambda (x) (string-match counsel-th-filter x))
-               (split-string (buffer-string) "\n" t))
-    ))
+               (reverse (split-string (buffer-string) "\n" t)))))
 
-(defvar counsel-th-meta-history)
+(defun counsel-th--action (cand)
+  "Send CAND to term prompt, without executing."
+  (term-send-raw-string (concat "" cand)))
+
 (defun counsel-term-history ()
   "You know, do stuff."
   (interactive)
   (ivy-read "History: "
-            (counsel-th--read-lines (expand-file-name counsel-th-history-file))
-            :history counsel-th-meta-history
-            :action (lambda (x)
-                      (setq counsel-th--placeholder x)))
-  (term-send-raw-string (concat "" counsel-th--placeholder)))
+            (counsel-th--read-lines
+             (expand-file-name counsel-th-history-file))
+            :initial-input "^"
+            :action 'counsel-th--action
+            ))
 
 (provide 'counsel-term-history)
 ;;; counsel-term-history.el ends here
